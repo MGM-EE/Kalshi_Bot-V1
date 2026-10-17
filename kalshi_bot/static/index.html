@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kalshi · Paper Research</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/market-chart.css">
+  <script src="/static/app.js" defer></script>
+  <script src="/static/market-chart.js" defer></script>
+</head>
+<body>
+  <div class="paper-strip"><strong>PAPER TRADING ONLY</strong><span id="data-label">CONNECTING TO DATA</span><span>No real orders · no real funds</span></div>
+  <main>
+    <header><div><div class="eyebrow">KALSHI / CRYPTO RESEARCH</div><h1>Market observatory<span class="accent">.</span></h1><p class="muted">15-minute baseline · BTC, ETH &amp; SOL · shared paper portfolio</p></div><div class="status-area"><span id="connection" class="status">Connecting</span><div id="last-update" class="muted mono">Waiting for database</div></div></header>
+    <div id="notice" role="status" class="notice" hidden></div>
+    <p id="api-evidence" class="muted" role="status">Waiting for a response from Kalshi. Opening the dashboard alone does not connect to the API.</p>
+    <section class="metrics" aria-label="Portfolio summary" id="metrics"></section>
+    <p class="valuation-note muted" id="valuation">Executable marks use fee-net bids. Missing depth is shown explicitly.</p>
+    <section class="panel market-view" aria-label="Live market chart and paper trades">
+      <div class="market-chart-heading">
+        <div><div class="eyebrow">MARKET TAPE / PAPER FILLS</div><h2>Watch the market. See every trade.</h2></div>
+        <div class="chart-asset-tabs" role="group" aria-label="Chart asset">
+          <button type="button" data-chart-asset="BTC" class="selected" aria-pressed="true">BTC</button>
+          <button type="button" data-chart-asset="ETH" aria-pressed="false">ETH</button>
+          <button type="button" data-chart-asset="SOL" aria-pressed="false">SOL</button>
+        </div>
+      </div>
+      <div class="chart-toolbar">
+        <label class="chart-market-label">Market <select id="chart-market" aria-label="Market round"><option value="">Waiting for markets</option></select></label>
+        <div class="chart-view-tabs" role="group" aria-label="Chart price type">
+          <button type="button" data-chart-view="contract" class="selected" aria-pressed="true">UP / DOWN prices</button>
+          <button type="button" data-chart-view="reference" aria-pressed="false">Crypto / strike</button>
+        </div>
+        <div class="chart-range-tabs" role="group" aria-label="Chart time range">
+          <button type="button" data-chart-window="1m" aria-pressed="false">1m</button>
+          <button type="button" data-chart-window="5m" aria-pressed="false">5m</button>
+          <button type="button" data-chart-window="15m" aria-pressed="false">15m</button>
+          <button type="button" data-chart-window="round" class="selected" aria-pressed="true">Full round</button>
+        </div>
+      </div>
+      <div class="chart-readout"><div id="chart-prices">Waiting for observations</div><span id="chart-stream-status" class="badge">CONNECTING</span></div>
+      <p id="chart-description" class="muted">Prices update automatically. Trade markers represent the bot's actual recorded paper fills.</p>
+      <div class="market-chart-stage" id="market-chart-stage">
+        <div id="market-chart-canvas" aria-label="Market price chart"><div class="chart-placeholder">Waiting for price observations...</div></div>
+        <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+      </div>
+      <div class="chart-legend" id="chart-legend"><span><i class="legend-line up"></i>UP bid</span><span><i class="legend-line down"></i>DOWN bid</span><span><i class="legend-line ask"></i>Dashed: ask</span><span>▲ BUY</span><span>■ SELL</span><span>Settlement is listed separately</span></div>
+      <div id="demo-playback" class="demo-playback" hidden>
+        <button id="chart-play" type="button" class="button primary">Play demo</button>
+        <label class="visually-hidden" for="chart-scrubber">Demo playback time</label>
+        <input id="chart-scrubber" type="range" min="0" max="1000" value="0" step="1">
+        <span id="chart-playback-time" class="mono">00:00</span>
+        <label>Speed <select id="chart-speed"><option value="1">1×</option><option value="10">10×</option><option value="30" selected>30×</option><option value="60">60×</option></select></label>
+        <span class="muted">Recorded demo playback; portfolio cards show completed totals.</span>
+      </div>
+      <div class="chart-activity-heading"><h3>Trades on this chart</h3><span id="chart-activity-count" class="muted">No recorded fills</span></div>
+      <div id="chart-activity" class="chart-activity" aria-live="off"><span class="muted">Recorded buys and sells will appear here.</span></div>
+    </section>
+    <div class="section-heading"><div><span class="eyebrow">01 / MARKETS</span><h2>Three assets. One baseline.</h2></div><span class="muted">Reference ≠ settlement result</span></div>
+    <section id="assets" class="asset-grid" aria-label="Asset markets"></section>
+    <div class="lower-grid">
+      <section class="panel"><div class="panel-heading"><h2>Open positions</h2><span class="eyebrow">PAPER EXPOSURE</span></div><div class="table-scroll"><table><thead><tr><th>Market</th><th>Side</th><th>Remaining</th><th>Cost basis</th><th>Net bid mark</th><th>Valuation</th></tr></thead><tbody id="positions"></tbody></table></div></section>
+      <section class="panel"><div class="panel-heading"><h2>Feed health</h2><span class="eyebrow">RECEIPT TIME</span></div><div id="feed-health" class="health-list"></div></section>
+    </div>
+    <section class="panel trade-panel">
+      <div class="panel-heading"><div><span class="eyebrow">02 / LEDGER</span><h2>Complete trade history</h2></div><div class="downloads"><a id="csv-download" class="button" href="/api/export.csv">↓ CSV</a><a id="json-download" class="button" href="/api/export.json">↓ JSON</a></div></div>
+      <form id="filters" class="filters"><label>Asset<select name="asset"><option value="">All assets</option><option>BTC</option><option>ETH</option><option>SOL</option></select></label><label>Direction<select name="side"><option value="">All directions</option><option value="yes">UP / YES</option><option value="no">DOWN / NO</option></select></label><label>Status<select name="status"><option value="">All statuses</option><option value="pending">Open / pending</option><option value="sold">Sold</option><option value="settled">Settled</option></select></label><label>Opened after<input type="datetime-local" name="started_after"></label><label>Opened before<input type="datetime-local" name="started_before"></label><button type="submit" class="button primary">Apply filters</button></form>
+      <div id="trade-error" class="muted" role="status"></div>
+      <div class="table-scroll"><table><thead><tr><th>Opened</th><th>Market</th><th>Side</th><th>Quantity</th><th>All-in cost</th><th>Realized P&amp;L</th><th>Remaining</th><th>Status</th></tr></thead><tbody id="trades"></tbody></table></div>
+      <div class="pagination"><span id="trade-count" class="muted">No trades loaded</span><div><button id="prev" class="button" disabled>← Previous</button><button id="next" class="button" disabled>Next →</button></div></div>
+    </section>
+    <div class="section-heading"><div><span class="eyebrow">03 / RESEARCH</span><h2>Evidence before conclusions.</h2></div><span class="muted">Descriptive paper observations</span></div>
+    <div class="lower-grid"><section class="panel"><div class="panel-heading"><h2>Trajectory coverage</h2><span class="eyebrow">MISSING ≠ FLAT</span></div><p class="muted">Fee-net executable observations. Unobserved and censored cases remain visible.</p><div id="analytics" class="research-results muted">Waiting for observations.</div></section><section class="panel"><div class="panel-heading"><h2>Paired exit experiments</h2><span class="eyebrow">RESEARCH ONLY</span></div><p class="muted">Alternative exits share baseline entries. Results do not establish an edge.</p><div id="experiments" class="research-results muted">Waiting for comparisons.</div></section></div>
+    <footer><span>KALSHI RESEARCH BOT / V1</span><span>Read-only dashboard · equity marks are not fills · settlement requires an official result</span></footer>
+  </main>
+</body>
+</html>

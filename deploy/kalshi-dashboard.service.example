@@ -1,0 +1,16 @@
+[Unit]
+Description=Kalshi PAPER read-only dashboard
+After=network.target
+
+[Service]
+User=kalshi
+WorkingDirectory=/srv/Kalshi_Bot-V1
+ExecStart=/srv/Kalshi_Bot-V1/.venv/bin/kalshi-bot dashboard --data-dir /srv/kalshi-data/paper --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

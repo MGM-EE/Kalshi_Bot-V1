@@ -1,0 +1,19 @@
+[Unit]
+Description=Kalshi PAPER research collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Replace user and every /srv path for your own host before installing.
+User=kalshi
+WorkingDirectory=/srv/Kalshi_Bot-V1
+EnvironmentFile=/srv/kalshi-secrets/collector.env
+ExecStart=/srv/Kalshi_Bot-V1/.venv/bin/kalshi-bot paper --config /srv/Kalshi_Bot-V1/config.example.toml --data-dir /srv/kalshi-data/paper
+Restart=on-failure
+RestartSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
