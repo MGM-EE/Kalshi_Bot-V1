@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Kalshi · Paper Research</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/market-chart.css">
   <script src="/static/app.js" defer></script>
+  <script src="/static/market-chart.js" defer></script>
 </head>
 <body>
   <div class="paper-strip"><strong>PAPER TRADING ONLY</strong><span id="data-label">CONNECTING TO DATA</span><span>No real orders · no real funds</span></div>
@@ -14,6 +16,46 @@
     <div id="notice" role="status" class="notice" hidden></div>
     <section class="metrics" aria-label="Portfolio summary" id="metrics"></section>
     <p class="valuation-note muted" id="valuation">Executable marks use fee-net bids. Missing depth is shown explicitly.</p>
+    <section class="panel market-view" aria-label="Live market chart and paper trades">
+      <div class="market-chart-heading">
+        <div><div class="eyebrow">MARKET TAPE / PAPER FILLS</div><h2>Watch the market. See every trade.</h2></div>
+        <div class="chart-asset-tabs" role="group" aria-label="Chart asset">
+          <button type="button" data-chart-asset="BTC" class="selected" aria-pressed="true">BTC</button>
+          <button type="button" data-chart-asset="ETH" aria-pressed="false">ETH</button>
+          <button type="button" data-chart-asset="SOL" aria-pressed="false">SOL</button>
+        </div>
+      </div>
+      <div class="chart-toolbar">
+        <label class="chart-market-label">Market <select id="chart-market" aria-label="Market round"><option value="">Waiting for markets</option></select></label>
+        <div class="chart-view-tabs" role="group" aria-label="Chart price type">
+          <button type="button" data-chart-view="contract" class="selected" aria-pressed="true">UP / DOWN prices</button>
+          <button type="button" data-chart-view="reference" aria-pressed="false">Crypto / strike</button>
+        </div>
+        <div class="chart-range-tabs" role="group" aria-label="Chart time range">
+          <button type="button" data-chart-window="1m" aria-pressed="false">1m</button>
+          <button type="button" data-chart-window="5m" aria-pressed="false">5m</button>
+          <button type="button" data-chart-window="15m" aria-pressed="false">15m</button>
+          <button type="button" data-chart-window="round" class="selected" aria-pressed="true">Full round</button>
+        </div>
+      </div>
+      <div class="chart-readout"><div id="chart-prices">Waiting for observations</div><span id="chart-stream-status" class="badge">CONNECTING</span></div>
+      <p id="chart-description" class="muted">Prices update automatically. Trade markers represent the bot's actual recorded paper fills.</p>
+      <div class="market-chart-stage" id="market-chart-stage">
+        <div id="market-chart-canvas" aria-label="Market price chart"><div class="chart-placeholder">Waiting for price observations...</div></div>
+        <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+      </div>
+      <div class="chart-legend" id="chart-legend"><span><i class="legend-line up"></i>UP bid</span><span><i class="legend-line down"></i>DOWN bid</span><span><i class="legend-line ask"></i>Dashed: ask</span><span>▲ BUY</span><span>■ SELL</span><span>Settlement is listed separately</span></div>
+      <div id="demo-playback" class="demo-playback" hidden>
+        <button id="chart-play" type="button" class="button primary">Play demo</button>
+        <label class="visually-hidden" for="chart-scrubber">Demo playback time</label>
+        <input id="chart-scrubber" type="range" min="0" max="1000" value="0" step="1">
+        <span id="chart-playback-time" class="mono">00:00</span>
+        <label>Speed <select id="chart-speed"><option value="1">1×</option><option value="10">10×</option><option value="30" selected>30×</option><option value="60">60×</option></select></label>
+        <span class="muted">Recorded demo playback; portfolio cards show completed totals.</span>
+      </div>
+      <div class="chart-activity-heading"><h3>Trades on this chart</h3><span id="chart-activity-count" class="muted">No recorded fills</span></div>
+      <div id="chart-activity" class="chart-activity" aria-live="off"><span class="muted">Recorded buys and sells will appear here.</span></div>
+    </section>
     <div class="section-heading"><div><span class="eyebrow">01 / MARKETS</span><h2>Three assets. One baseline.</h2></div><span class="muted">Reference ≠ settlement result</span></div>
     <section id="assets" class="asset-grid" aria-label="Asset markets"></section>
     <div class="lower-grid">

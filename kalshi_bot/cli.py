@@ -90,6 +90,12 @@ def _parser():
     dashboard.add_argument("--data-dir", default="data/demo")
     dashboard.add_argument("--host", default="127.0.0.1")
     dashboard.add_argument("--port", type=int, default=8000)
+    desktop = sub.add_parser("desktop", help="Start the bot and open its dashboard in your browser")
+    desktop.add_argument("--mode", choices=["demo", "paper"], default="demo")
+    desktop.add_argument("--config")
+    desktop.add_argument("--data-dir")
+    desktop.add_argument("--port", type=int, default=8000)
+    desktop.add_argument("--no-browser", action="store_true")
     replay = sub.add_parser("replay", help="Replay recorded JSONL/gzip/SQLite events into a new directory")
     replay.add_argument("source")
     replay.add_argument("--data-dir", required=True)
@@ -144,6 +150,10 @@ def _replay_settings(source, config_file, dataset):
 def main(argv=None):
     args = _parser().parse_args(argv)
     try:
+        if args.command == "desktop":
+            from .desktop import launch
+            launch(args.mode, args.data_dir, args.config, args.port, not args.no_browser)
+            return
         if args.command == "dashboard":
             import uvicorn
             from .dashboard import create_app

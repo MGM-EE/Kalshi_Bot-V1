@@ -24,7 +24,7 @@ def demo_events():
     for second in range(911):
         now = START + second
         prices = {"BTC": D("79940") + D("0.2") * second,
-                  "ETH": D("2498") + D("0.0075") * second,
+                  "ETH": D("2504") - D("0.0075") * second,
                   "SOL": D("99.94") + D("0.0003") * min(second, 450)
                          - D("0.0005") * max(0, second - 450)}
         for asset, price in prices.items():
@@ -33,6 +33,16 @@ def demo_events():
                    "price": str(price), "source": "cfbenchmarks_value", "dataset": "demo"}
             bid = D("0.96") if asset != "SOL" and second >= 840 else D("0.32")
             no_bid = D("0.03") if bid == D("0.96") else D("0.62")
+            if 360 <= second < 840 and asset != "SOL":
+                phase = ((second - 360) // 10) % 40
+                swing = phase if phase <= 20 else 40 - phase
+                bid = D("0.28") + D("0.01") * swing
+                no_bid = D("0.94") - bid
+            elif second >= 360 and asset == "SOL":
+                bid = max(D("0.02"), D("0.32") - D("0.01") * ((second - 360) // 20))
+                no_bid = D("0.94") - bid
+            if asset == "ETH":
+                bid, no_bid = no_bid, bid
             book = OrderBook(markets[asset].ticker, (Level(bid, 100),),
                              (Level(no_bid, 100),), now, True, second + 1)
             yield {"type": "book", "event_id": f"demo-book-{asset}-{second}",
@@ -43,4 +53,4 @@ def demo_events():
             for asset, market in markets.items():
                 yield {"type": "settlement", "event_id": f"demo-settlement-{asset}",
                        "received_at": now, "dataset": "demo", "ticker": market.ticker,
-                       "result": "no" if asset == "SOL" else "yes", "official": False}
+                       "result": "no" if asset in {"ETH", "SOL"} else "yes", "official": False}

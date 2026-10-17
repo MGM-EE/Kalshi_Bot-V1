@@ -20,6 +20,30 @@ In this prepared cloud checkout, dependencies are already installed. Run `.venv/
 
 If uv is unavailable, create a Python virtual environment and run `python -m pip install -e '.[dev]'`; this installs compatible versions rather than reproducing the exact `uv.lock` environment.
 
+## Windows desktop shortcut
+
+In the extracted bot folder, double-click **Create Desktop Shortcut.cmd** once. It creates **Kalshi Bot (Demo)** on your Windows desktop, including desktops stored in OneDrive. No administrator account is needed.
+
+Double-click that desktop icon to start the bot and open its dashboard in your browser. On first launch, it prepares the virtual environment/dependencies if needed and generates the demo; this can take a minute or more on Windows. Later launches reuse the prepared demo. Keep the launcher window open while using the bot. Close that window or press Ctrl+C in it to stop; closing the browser tab alone leaves the launcher running. A second click on the icon opens the existing instance.
+
+You can also double-click **Launch Bot.cmd** directly, or run `kalshi-bot desktop` on any supported platform. The launcher chooses another local port if 8000 is in use. It preserves existing data and keeps each code/configuration version in its own `data/desktop/` directory. Keep the bot folder in place after creating the shortcut; recreate the shortcut if you move it. To use an updated ZIP, extract it into a new folder and run its shortcut installer; preserve your old folder and data. If the installer finds an existing shortcut pointing elsewhere, rename that shortcut before installing the new one.
+
+For a separate real-data **paper** shortcut after configuring credentials and health/fee settings, run this once from the bot folder in PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\Create Desktop Shortcut.ps1" -Mode paper
+```
+
+This creates **Kalshi Bot (Paper)**, which starts the real-data collector and dashboard together. Without the required feed access and settings, it collects data with entries paused.
+
+## Live chart and trade markers
+
+The enlarged market chart updates every second while the real-data collector is running. Choose BTC, ETH or SOL, a market round, and a time range. Switch between **UP / DOWN prices** (separate observed bids and dashed asks) and **Crypto / strike** (CF reference and official strike). Hover for received prices/times; click a trade marker for its quantity, actual paper fill price, and fee.
+
+Triangles mark **BUY UP / BUY DOWN**; squares mark **SELL UP / SELL DOWN**, colored to match the selected outcome. The chart uses the actual recorded outcome price, including NO fills; settlement payouts are listed separately and never presented as sales. Missing feeds, gaps, polling-only books, and stale data remain visible. The dashboard cannot place orders.
+
+In demo mode, the chart automatically plays the recorded synthetic round at **30× speed** once preparation finishes. Use pause, replay, speed, and scrubber controls to inspect trades. BTC demonstrates an UP buy/sell and ETH a DOWN buy/sell; SOL demonstrates holding through settlement. Playback changes the chart's observation time only; portfolio cards show the completed demo totals. It creates no new trades or performance evidence.
+
 ## Collect real data
 
 ```bash

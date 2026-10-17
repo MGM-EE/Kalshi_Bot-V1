@@ -336,6 +336,103 @@ def _csv_cell(value):
     return value
 
 
+def _chart_markets(connection, asset):
+    result = []
+    for row in connection.execute("SELECT ticker,payload FROM markets WHERE json_valid(payload) "
+                                  "AND json_extract(payload,'$.asset')=? "
+                                  "ORDER BY json_extract(payload,'$.open_time') DESC LIMIT 100", (asset,)):
+        market = _json(row["payload"], {})
+        result.append({"ticker": row["ticker"], "open_time": market.get("open_time"),
+                       "cutoff": market.get("cutoff"), "strike": market.get("strike")})
+    return result
+
+
+def _chart_data(path: Path, asset: str, ticker: str | None, window: str):
+    if _status(path)["status"] != "ready":
+        raise HTTPException(503, "The bot is preparing its database. The chart will refresh automatically.")
+    now = time.time()
+    with _database(path) as connection:
+        available = _chart_markets(connection, asset)
+        if not available:
+            if ticker is not None:
+                raise HTTPException(404, "That market is not available for the selected asset.")
+            return {"asset": asset, "market": None, "markets": [], "points": [], "references": [],
+                    "fills": [], "dataset": "unknown", "status": "waiting", "generated_at": now}
+        if ticker is None:
+            active = [m for m in available if (m.get("open_time") or 0) <= now < (m.get("cutoff") or 0)]
+            past = [m for m in available if (m.get("open_time") or 0) <= now]
+            ticker = (active or past or available)[0]["ticker"]
+        if ticker not in {m["ticker"] for m in available}:
+            raise HTTPException(404, "That market is not available for the selected asset.")
+        row = connection.execute("SELECT payload FROM markets WHERE ticker=?", (ticker,)).fetchone()
+        market = _json(row[0], {})
+        opened, cutoff = market.get("open_time"), market.get("cutoff")
+        if (not isinstance(opened, (int, float)) or not isinstance(cutoff, (int, float))
+                or not math.isfinite(opened) or not math.isfinite(cutoff) or cutoff <= opened):
+            raise HTTPException(422, "This market has no verified chart time range yet.")
+        labels = {_json(row[0], {}).get("dataset", _json(row[0], {}).get("mode", "unknown"))
+                  for row in connection.execute("SELECT config_json FROM run_config")}
+        demo = bool(labels & {"demo", "synthetic"})
+        real = bool(labels & {"real", "paper", "live", "collect"})
+        dataset = "mixed" if demo and real else "demo" if demo else "real" if real else "unknown"
+        latest_row = connection.execute("SELECT received_at,payload FROM events WHERE type='book' "
+                                         "AND json_valid(payload) AND json_extract(payload,'$.ticker')=? "
+                                         "ORDER BY id DESC LIMIT 1", (ticker,)).fetchone()
+        latest_at = latest_row["received_at"] if latest_row else None
+        end = max(opened + 1, min(cutoff, latest_at if latest_at is not None else now))
+        seconds = {"1m": 60, "5m": 300, "15m": 900}.get(window)
+        start = max(opened, end - seconds) if seconds else opened
+
+        def sampled(kind, field, identity):
+            # One last observation per received second; retain empty books so
+            # the frontend breaks the line at known disconnects.
+            query = ("SELECT e.received_at,e.payload FROM events e JOIN ("
+                     "SELECT MAX(id) AS id FROM events WHERE type=? AND json_valid(payload) "
+                     f"AND json_extract(payload,'$.{field}')=? AND received_at>=? AND received_at<=? "
+                     "GROUP BY CAST(received_at AS INTEGER)) s ON s.id=e.id "
+                     "ORDER BY e.received_at,e.id LIMIT 1200")
+            return connection.execute(query, (kind, identity, start, end)).fetchall()
+
+        yes_up = market.get("yes_means_up", True)
+        points = []
+        for point in sampled("book", "ticker", ticker):
+            book = _json(point["payload"], {})
+            quotes = _best_quotes(book)
+            up, down = ("yes", "no") if yes_up else ("no", "yes")
+            points.append({"at": point["received_at"], "up_bid": quotes[up + "_bid"],
+                           "up_ask": quotes[up + "_ask"], "down_bid": quotes[down + "_bid"],
+                           "down_ask": quotes[down + "_ask"], "healthy": bool(book.get("healthy", False))})
+        references = []
+        for point in sampled("reference", "asset", asset):
+            value = _json(point["payload"], {})
+            if value.get("source") == "cfbenchmarks_value":
+                references.append({"at": point["received_at"], "price": value.get("price"),
+                                   "source_at": value.get("source_at")})
+        fills = []
+        for fill in connection.execute("SELECT f.*,p.side FROM fills f JOIN positions p ON p.id=f.position_id "
+                                       "WHERE p.market_ticker=? AND f.created_at>=? "
+                                       "ORDER BY f.created_at,f.id", (ticker, start)):
+            direction = "UP" if (fill["side"] == "yes") == yes_up else "DOWN"
+            action = {"entry": "BUY", "exit": "SELL", "settlement": "SETTLED"}.get(fill["kind"], "FILL")
+            fills.append({"id": fill["id"], "at": fill["created_at"], "kind": fill["kind"],
+                          "action": action, "direction": direction, "side": fill["side"],
+                          "price": fill["price"], "quantity": fill["quantity"], "fee": fill["fee"],
+                          "label": f"{action} {direction}"})
+        fresh = latest_at is not None and 0 <= now - latest_at <= 5
+        healthy = bool(latest_row and _json(latest_row["payload"], {}).get("healthy", False))
+        status = ("demo" if dataset == "demo" else "mixed" if dataset == "mixed" else
+                  "live" if fresh and healthy else "polling" if fresh else "stale")
+        demo_complete = dataset == "demo" and connection.execute(
+            "SELECT 1 FROM events WHERE type='settlement' AND json_extract(payload,'$.ticker')=? "
+            "AND json_extract(payload,'$.dataset')='demo' LIMIT 1", (ticker,)).fetchone() is not None
+        return _clean({"asset": asset, "market": market, "markets": available, "points": points,
+                       "references": references, "fills": fills, "dataset": dataset, "status": status,
+                       "range_start": start, "range_end": end, "latest_received_at": latest_at,
+                       "generated_at": now, "poll_interval_ms": 1000,
+                       "demo_complete": demo_complete,
+                       "quote_label": "Observed executable bids and asks; fills include their actual simulated prices."})
+
+
 def create_app(database: Path | str) -> FastAPI:
     """Serve one fixed database path; no HTTP request can select another file."""
     path = Path(database).expanduser().resolve()
@@ -348,12 +445,23 @@ def create_app(database: Path | str) -> FastAPI:
 
     @app.get("/health")
     def health():
+        from .desktop import APP_ID, database_id
         database_status = _status(path)
-        return JSONResponse({"paper": True, "database": database_status}, status_code=200 if database_status["status"] == "ready" else 503)
+        return JSONResponse({"paper": True, "app_id": APP_ID, "database_id": database_id(path),
+                             "database": database_status}, status_code=200 if database_status["status"] == "ready" else 503)
 
     @app.get("/api/state")
     def state():
         return _state(path)
+
+    @app.get("/api/chart")
+    def market_chart(asset: Literal["BTC", "ETH", "SOL"] = "BTC",
+                     ticker: str | None = Query(None, min_length=1, max_length=200),
+                     window: Literal["round", "1m", "5m", "15m"] = "round"):
+        try:
+            return _chart_data(path, asset, ticker, window)
+        except sqlite3.Error:
+            raise HTTPException(503, "Chart data is temporarily unavailable; retrying automatically.") from None
 
     @app.get("/api/trades")
     def trades(asset: Literal["BTC", "ETH", "SOL"] | None = None,
