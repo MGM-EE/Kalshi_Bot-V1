@@ -7,7 +7,7 @@ name = "kalshi-research-bot"
 version = "0.1.0"
 description = "Paper-only, receipt-time-driven Kalshi crypto research bot"
 requires-python = ">=3.12"
-dependencies = ["httpx>=0.28,<0.29", "websockets>=15,<16", "cryptography>=44,<47", "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pyarrow>=19,<24"]
+dependencies = ["httpx>=0.28,<0.29", "websockets>=15,<16", "cryptography>=44,<47", "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pyarrow>=19,<24", "tzdata>=2025.2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2"]
