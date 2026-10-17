@@ -1,0 +1,25 @@
+# Non-secret configuration. API credentials belong in the process environment.
+assets = ["BTC", "ETH", "SOL"]
+api_url = "https://external-api.kalshi.com/trade-api/v2"
+ws_url = "wss://external-api-ws.kalshi.com/trade-api/ws/v2"
+refresh_seconds = 30
+depth_fraction = "0.5"
+execution_delay_ms = 500
+
+# Omitted until independently measured; entries pause without a verified bound.
+# clock_uncertainty_ms = 50
+
+# Optional raw research collection. These feeds NEVER replace the CF signal.
+exchange_feeds = []
+# exchange_feeds = ["coinbase", "kraken"]
+
+# Review changed rule wording only with a matching SHA256 and explicit evidence.
+# See docs/OPERATIONS.md. Relative paths resolve relative to this TOML file.
+# market_overrides_file = "market-overrides.json"
+
+# Optional paper scenario, not a verified account fee model. Inspect live fee
+# metadata and precision class independently before choosing assumptions.
+# [fee_scenario]
+# name = "quadratic-M1-direct-precision-unverified"
+# multiplier = "1"
+# balance_quantum = "0.0001"

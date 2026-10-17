@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kalshi · Paper Research</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="paper-strip"><strong>PAPER TRADING ONLY</strong><span id="data-label">CONNECTING TO DATA</span><span>No real orders · no real funds</span></div>
+  <main>
+    <header><div><div class="eyebrow">KALSHI / CRYPTO RESEARCH</div><h1>Market observatory<span class="accent">.</span></h1><p class="muted">15-minute baseline · BTC, ETH &amp; SOL · shared paper portfolio</p></div><div class="status-area"><span id="connection" class="status">Connecting</span><div id="last-update" class="muted mono">Waiting for database</div></div></header>
+    <div id="notice" role="status" class="notice" hidden></div>
+    <section class="metrics" aria-label="Portfolio summary" id="metrics"></section>
+    <p class="valuation-note muted" id="valuation">Executable marks use fee-net bids. Missing depth is shown explicitly.</p>
+    <div class="section-heading"><div><span class="eyebrow">01 / MARKETS</span><h2>Three assets. One baseline.</h2></div><span class="muted">Reference ≠ settlement result</span></div>
+    <section id="assets" class="asset-grid" aria-label="Asset markets"></section>
+    <div class="lower-grid">
+      <section class="panel"><div class="panel-heading"><h2>Open positions</h2><span class="eyebrow">PAPER EXPOSURE</span></div><div class="table-scroll"><table><thead><tr><th>Market</th><th>Side</th><th>Remaining</th><th>Cost basis</th><th>Net bid mark</th><th>Valuation</th></tr></thead><tbody id="positions"></tbody></table></div></section>
+      <section class="panel"><div class="panel-heading"><h2>Feed health</h2><span class="eyebrow">RECEIPT TIME</span></div><div id="feed-health" class="health-list"></div></section>
+    </div>
+    <section class="panel trade-panel">
+      <div class="panel-heading"><div><span class="eyebrow">02 / LEDGER</span><h2>Complete trade history</h2></div><div class="downloads"><a id="csv-download" class="button" href="/api/export.csv">↓ CSV</a><a id="json-download" class="button" href="/api/export.json">↓ JSON</a></div></div>
+      <form id="filters" class="filters"><label>Asset<select name="asset"><option value="">All assets</option><option>BTC</option><option>ETH</option><option>SOL</option></select></label><label>Direction<select name="side"><option value="">All directions</option><option value="yes">UP / YES</option><option value="no">DOWN / NO</option></select></label><label>Status<select name="status"><option value="">All statuses</option><option value="pending">Open / pending</option><option value="sold">Sold</option><option value="settled">Settled</option></select></label><label>Opened after<input type="datetime-local" name="started_after"></label><label>Opened before<input type="datetime-local" name="started_before"></label><button type="submit" class="button primary">Apply filters</button></form>
+      <div id="trade-error" class="muted" role="status"></div>
+      <div class="table-scroll"><table><thead><tr><th>Opened</th><th>Market</th><th>Side</th><th>Quantity</th><th>All-in cost</th><th>Realized P&amp;L</th><th>Remaining</th><th>Status</th></tr></thead><tbody id="trades"></tbody></table></div>
+      <div class="pagination"><span id="trade-count" class="muted">No trades loaded</span><div><button id="prev" class="button" disabled>← Previous</button><button id="next" class="button" disabled>Next →</button></div></div>
+    </section>
+    <div class="section-heading"><div><span class="eyebrow">03 / RESEARCH</span><h2>Evidence before conclusions.</h2></div><span class="muted">Descriptive paper observations</span></div>
+    <div class="lower-grid"><section class="panel"><div class="panel-heading"><h2>Trajectory coverage</h2><span class="eyebrow">MISSING ≠ FLAT</span></div><p class="muted">Fee-net executable observations. Unobserved and censored cases remain visible.</p><div id="analytics" class="research-results muted">Waiting for observations.</div></section><section class="panel"><div class="panel-heading"><h2>Paired exit experiments</h2><span class="eyebrow">RESEARCH ONLY</span></div><p class="muted">Alternative exits share baseline entries. Results do not establish an edge.</p><div id="experiments" class="research-results muted">Waiting for comparisons.</div></section></div>
+    <footer><span>KALSHI RESEARCH BOT / V1</span><span>Read-only dashboard · equity marks are not fills · settlement requires an official result</span></footer>
+  </main>
+</body>
+</html>
