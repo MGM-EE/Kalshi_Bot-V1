@@ -120,7 +120,7 @@ def _stop(process):
             process.wait(timeout=8)
 
 
-def launch(mode="demo", data_dir=None, config_file=None, port=8000, open_browser=True):
+def launch(mode="paper", data_dir=None, config_file=None, port=8000, open_browser=True):
     if mode not in {"demo", "paper"} or not 1 <= port <= 65535:
         raise ValueError("Choose demo/paper mode and a port between 1 and 65535")
     directory = (Path(data_dir) if data_dir else default_data_dir(mode, config_file)).resolve()
@@ -191,7 +191,7 @@ def launch(mode="demo", data_dir=None, config_file=None, port=8000, open_browser
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Open the local PAPER bot and browser")
-    parser.add_argument("--mode", choices=["demo", "paper"], default="demo")
+    parser.add_argument("--mode", choices=["demo", "paper"], default="paper")
     parser.add_argument("--config")
     parser.add_argument("--data-dir")
     parser.add_argument("--port", type=int, default=8000)

@@ -91,7 +91,7 @@ def _parser():
     dashboard.add_argument("--host", default="127.0.0.1")
     dashboard.add_argument("--port", type=int, default=8000)
     desktop = sub.add_parser("desktop", help="Start the bot and open its dashboard in your browser")
-    desktop.add_argument("--mode", choices=["demo", "paper"], default="demo")
+    desktop.add_argument("--mode", choices=["demo", "paper"], default="paper")
     desktop.add_argument("--config")
     desktop.add_argument("--data-dir")
     desktop.add_argument("--port", type=int, default=8000)

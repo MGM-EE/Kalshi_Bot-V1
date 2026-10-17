@@ -2,7 +2,15 @@
 
 A **paper-only** BTC, ETH, and SOL 15-minute market research bot. It collects Kalshi market data, evaluates the frozen baseline, simulates delayed fills against executable depth, and keeps a shared $250 SQLite account. There is no live order submission client.
 
-## Run the demo
+## Start collecting live Kalshi data
+
+On Windows, extract the project and double-click **Create Desktop Shortcut.cmd**, then open **Kalshi Bot (Live Data)** on the desktop. Python 3.12 must be installed. This starts the real Kalshi collector and dashboard together. **No API key is needed for public market details and order-book snapshots.** Public books are polled approximately every five seconds, with network time added; this is not a tick-by-tick stream.
+
+The dashboard reports **Kalshi API / collecting** only after receiving an actual API response. Below the header it shows the last response time, stored market/book counts, and latest book age. Old observations become **Kalshi API / stale**. A local dashboard or database connection by itself never means Kalshi is connected. Collection works even while paper entries are paused for missing strategy prerequisites.
+
+For an installed command-line environment, run `kalshi-bot desktop` (live data is the default). Authenticated streaming remains optional and requires local credentials; see below. The program gathers real data and simulates trades without placing real-money orders.
+
+## Optional synthetic demo
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
@@ -22,19 +30,19 @@ If uv is unavailable, create a Python virtual environment and run `python -m pip
 
 ## Windows desktop shortcut
 
-In the extracted bot folder, double-click **Create Desktop Shortcut.cmd** once. It creates **Kalshi Bot (Demo)** on your Windows desktop, including desktops stored in OneDrive. No administrator account is needed.
+In the extracted bot folder, double-click **Create Desktop Shortcut.cmd** once. It creates **Kalshi Bot (Live Data)** on your Windows desktop, including desktops stored in OneDrive. No administrator account is needed. Existing **Kalshi Bot (Demo)** shortcuts continue to open synthetic playback; use the new live-data icon for actual collection.
 
-Double-click that desktop icon to start the bot and open its dashboard in your browser. On first launch, it prepares the virtual environment/dependencies if needed and generates the demo; this can take a minute or more on Windows. Later launches reuse the prepared demo. Keep the launcher window open while using the bot. Close that window or press Ctrl+C in it to stop; closing the browser tab alone leaves the launcher running. A second click on the icon opens the existing instance.
+Double-click that desktop icon to start the collector and open its dashboard in your browser. On first launch, it prepares the virtual environment/dependencies if needed; this can take a minute or more on Windows. Allow time for initial market discovery and the first book snapshots. Keep the launcher window open while using the bot. Close that window or press Ctrl+C in it to stop; closing the browser tab alone leaves collection running. A second click on the icon opens the existing instance.
 
 You can also double-click **Launch Bot.cmd** directly, or run `kalshi-bot desktop` on any supported platform. The launcher chooses another local port if 8000 is in use. It preserves existing data and keeps each code/configuration version in its own `data/desktop/` directory. Keep the bot folder in place after creating the shortcut; recreate the shortcut if you move it. To use an updated ZIP, extract it into a new folder and run its shortcut installer; preserve your old folder and data. If the installer finds an existing shortcut pointing elsewhere, rename that shortcut before installing the new one.
 
-For a separate real-data **paper** shortcut after configuring credentials and health/fee settings, run this once from the bot folder in PowerShell:
+For a separate optional **synthetic demo** shortcut, run this once from the bot folder in PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\Create Desktop Shortcut.ps1" -Mode paper
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\Create Desktop Shortcut.ps1" -Mode demo
 ```
 
-This creates **Kalshi Bot (Paper)**, which starts the real-data collector and dashboard together. Without the required feed access and settings, it collects data with entries paused.
+This creates **Kalshi Bot (Demo)**. Its generated prices are not a live API feed. Live collection and demo playback use separate data directories.
 
 ## Live chart and trade markers
 

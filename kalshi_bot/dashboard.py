@@ -241,11 +241,43 @@ def _mark(position: dict, books: dict, now: float, config: dict) -> dict:
         return unavailable
 
 
+def _api_connection(connection: sqlite3.Connection, data_mode: str, now: float) -> dict:
+    """Report received API evidence, never infer a connection from a local DB."""
+    base = {"status": "waiting", "transport": None, "last_response_at": None,
+            "response_age_seconds": None, "last_book_at": None, "book_age_seconds": None,
+            "market_count": 0, "book_observations": 0, "websocket_status": "not_observed"}
+    if data_mode != "live_collected":
+        return {**base, "status": data_mode}
+    rest = connection.execute(
+        "SELECT MAX(received_at) FROM events WHERE type='metadata' AND json_valid(payload) "
+        "AND json_extract(payload,'$.venue')='kalshi' "
+        "AND json_extract(payload,'$.channel')='rest'").fetchone()[0]
+    book_count, book_at = connection.execute(
+        "SELECT COUNT(*),MAX(received_at) FROM events WHERE type='book' AND json_valid(payload) "
+        "AND json_extract(payload,'$.venue')='kalshi'").fetchone()
+    ws = connection.execute(
+        "SELECT received_at,payload FROM events WHERE type='health' AND json_valid(payload) "
+        "AND json_extract(payload,'$.details.component')='kalshi_ws' ORDER BY id DESC LIMIT 1").fetchone()
+    ws_details = _json(ws["payload"], {}).get("details", {}) if ws else {}
+    ws_ok = bool(ws and 0 <= now - ws["received_at"] <= 10
+                 and ws_details.get("status") in {"connected", "ok"})
+    response_at = max([value for value in (rest, ws["received_at"] if ws_ok else None)
+                       if value is not None], default=None)
+    age = max(0, now - response_at) if response_at is not None else None
+    return {**base, "status": "connected" if age is not None and age <= 90 else "stale" if age is not None else "waiting",
+            "transport": "websocket" if ws_ok else "rest" if rest is not None else None,
+            "last_response_at": response_at, "response_age_seconds": age,
+            "last_book_at": book_at, "book_age_seconds": max(0, now - book_at) if book_at is not None else None,
+            "market_count": connection.execute("SELECT COUNT(*) FROM markets").fetchone()[0],
+            "book_observations": book_count, "websocket_status": ws_details.get("status", "not_observed")}
+
+
 def _state(path: Path) -> dict:
     now = time.time()
     status = _status(path)
     base = {"paper": True, "data_mode": "uninitialized", "generated_at": now, "database": status,
-            "summary": None, "assets": [], "positions": [], "feed_health": [], "run": None}
+            "summary": None, "assets": [], "positions": [], "feed_health": [], "run": None,
+            "api_connection": {"status": "waiting"}}
     if status["status"] != "ready":
         return base
     try:
@@ -293,7 +325,8 @@ def _state(path: Path) -> dict:
             # Do not expose complete config: future configs might contain credentials.
             safe_run = {"run_id": run.get("run_id"), "started_at": run.get("started_at")} if run else None
             return _clean({**base, "data_mode": data_mode, "summary": summary, "assets": cards,
-                           "positions": positions, "feed_health": health, "run": safe_run})
+                           "positions": positions, "feed_health": health, "run": safe_run,
+                           "api_connection": _api_connection(connection, data_mode, now)})
     except (sqlite3.Error, ValueError, TypeError):
         return {**base, "database": {"status": "unavailable", "read_only": True, "detail": "Database snapshot could not be read."}}
 

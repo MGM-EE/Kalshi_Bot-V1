@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('demo', 'paper')][string]$Mode = 'demo',
+    [ValidateSet('demo', 'paper')][string]$Mode = 'paper',
     [string]$Destination = ''
 )
 $ErrorActionPreference = 'Stop'
@@ -9,7 +9,7 @@ if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
 }
 $launcher = Join-Path $PSScriptRoot 'Launch Bot.cmd'
 if (-not (Test-Path -LiteralPath $launcher)) { throw 'Keep this installer in the bot folder.' }
-$label = if ($Mode -eq 'paper') { 'Kalshi Bot (Paper)' } else { 'Kalshi Bot (Demo)' }
+$label = if ($Mode -eq 'paper') { 'Kalshi Bot (Live Data)' } else { 'Kalshi Bot (Demo)' }
 $path = Join-Path $Destination ($label + '.lnk')
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($path)

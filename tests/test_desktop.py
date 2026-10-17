@@ -67,7 +67,7 @@ def test_launcher_stops_owned_server_on_ctrl_c(tmp_path, monkeypatch):
     monkeypatch.setattr(desktop.webbrowser, "open", browser.append)
     def interrupt(_): raise KeyboardInterrupt
     monkeypatch.setattr(desktop.time, "sleep", interrupt)
-    desktop.launch(data_dir=tmp_path)
+    desktop.launch(mode="demo", data_dir=tmp_path)
     assert len(commands) == 1  # Completed demo is reused; no second collector.
     assert commands[0][-1] == "8123"
     assert server.terminated
@@ -105,7 +105,7 @@ def test_windows_shortcut_installer_handles_spaces_and_repeated_install(tmp_path
                                     "-File", str(root / "Create Desktop Shortcut.ps1"),
                                     "-Destination", str(destination)], capture_output=True, text=True, timeout=30)
         assert installed.returncode == 0, installed.stderr
-    link = destination / "Kalshi Bot (Demo).lnk"
+    link = destination / "Kalshi Bot (Live Data).lnk"
     assert link.is_file()
     literal = "'" + str(link).replace("'", "''") + "'"
     command = ("$link=(New-Object -ComObject WScript.Shell).CreateShortcut(" + literal + ");"
@@ -115,5 +115,28 @@ def test_windows_shortcut_installer_handles_spaces_and_repeated_install(tmp_path
     assert inspected.returncode == 0, inspected.stderr
     values = json.loads(inspected.stdout)
     assert Path(values["target"]) == root / "Launch Bot.cmd"
-    assert values["arguments"] == "--mode demo"
+    assert values["arguments"] == "--mode paper --config config.example.toml"
     assert Path(values["working"]) == root
+
+
+def test_default_launch_starts_real_collector_and_cleans_up(tmp_path, monkeypatch):
+    class Process:
+        terminated = False
+        def poll(self): return 0 if self.terminated else None
+        def terminate(self): self.terminated = True
+        def wait(self, timeout): return 0
+    processes, commands = [], []
+    def start(command):
+        commands.append(command)
+        process = Process()
+        processes.append(process)
+        return process
+    monkeypatch.setattr(desktop, "_matches", lambda *args: True)
+    monkeypatch.setattr(desktop, "_available_port", lambda preferred: 8123)
+    monkeypatch.setattr(desktop.subprocess, "Popen", start)
+    def interrupt(_): raise KeyboardInterrupt
+    monkeypatch.setattr(desktop.time, "sleep", interrupt)
+    desktop.launch(data_dir=tmp_path, open_browser=False)
+    assert len(commands) == 2
+    assert commands[1][3] == "paper"
+    assert all(process.terminated for process in processes)

@@ -8,5 +8,5 @@ if errorlevel 1 (
     exit /b 1
 )
 echo.
-echo Done! Double-click Kalshi Bot (Demo) on your desktop.
+echo Done! Double-click Kalshi Bot (Live Data) on your desktop.
 pause

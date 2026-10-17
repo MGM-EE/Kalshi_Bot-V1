@@ -228,3 +228,53 @@ def test_no_fill_marker_retains_outcome_side(database):
         marker = client.get("/api/state").json()["assets"][0]["fills"][0]
     assert marker["side"] == "no"
     assert marker["price"] == ".3"
+
+
+def test_live_connection_requires_api_evidence_and_expires(database, monkeypatch):
+    now = 2_000_000_000.0
+    monkeypatch.setattr("kalshi_bot.dashboard.time.time", lambda: now)
+    with sqlite3.connect(database) as conn:
+        conn.execute("UPDATE run_config SET config_json=?", (json.dumps({"mode": "paper", "dataset": "real"}),))
+    with TestClient(create_app(database)) as client:
+        assert client.get("/api/state").json()["api_connection"]["status"] == "waiting"
+        with sqlite3.connect(database) as conn:
+            for kind, at, payload in [
+                ("metadata", now - 2, {"venue": "kalshi", "channel": "rest"}),
+                ("book", now - 1, {"venue": "kalshi", "ticker": "BTC-15M", "yes_bids": [], "no_bids": []}),
+            ]:
+                conn.execute("INSERT INTO events(type,received_at,payload) VALUES (?,?,?)", (kind, at, json.dumps(payload)))
+        api = client.get("/api/state").json()["api_connection"]
+        assert api["status"] == "connected"
+        assert api["transport"] == "rest"
+        assert api["response_age_seconds"] == 2
+        assert api["book_observations"] == 1
+        assert api["book_age_seconds"] == 1
+        monkeypatch.setattr("kalshi_bot.dashboard.time.time", lambda: now + 120)
+        assert client.get("/api/state").json()["api_connection"]["status"] == "stale"
+
+
+def test_demo_never_claims_live_connection_from_saved_api_events(database):
+    with sqlite3.connect(database) as conn:
+        conn.execute("INSERT INTO events(type,received_at,payload) VALUES (?,?,?)",
+                     ("metadata", time.time(), json.dumps({"venue": "kalshi", "channel": "rest"})))
+    with TestClient(create_app(database)) as client:
+        assert client.get("/api/state").json()["api_connection"]["status"] == "demo"
+
+
+def test_streaming_connection_reverts_after_disconnect(database, monkeypatch):
+    now = 2_000_000_000.0
+    monkeypatch.setattr("kalshi_bot.dashboard.time.time", lambda: now)
+    with sqlite3.connect(database) as conn:
+        conn.execute("UPDATE run_config SET config_json=?", (json.dumps({"mode": "paper", "dataset": "real"}),))
+        conn.execute("INSERT INTO events(type,received_at,payload) VALUES (?,?,?)",
+                     ("health", now - 1, json.dumps({"details": {"component": "kalshi_ws", "status": "ok"}})))
+    with TestClient(create_app(database)) as client:
+        api = client.get("/api/state").json()["api_connection"]
+        assert api["status"] == "connected"
+        assert api["transport"] == "websocket"
+        with sqlite3.connect(database) as conn:
+            conn.execute("INSERT INTO events(type,received_at,payload) VALUES (?,?,?)",
+                         ("health", now, json.dumps({"details": {"component": "kalshi_ws", "status": "disconnected"}})))
+        api = client.get("/api/state").json()["api_connection"]
+        assert api["status"] == "waiting"
+        assert api["transport"] is None
